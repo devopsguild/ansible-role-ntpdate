@@ -1,0 +1,46 @@
+---
+
+- name: Install ntpdate
+  package:
+    name:
+      - ntpdate
+    state: present
+  tags: install
+  register: install
+
+- name: Reset localtime
+  file:
+    path: /etc/localtime
+    state: absent
+  tags: install
+  when: install.changed
+
+- name: Set localtime
+  file:
+    src: '/usr/share/zoneinfo/{{ timezone }}'
+    dest: /etc/localtime
+    state: link
+  tags: install
+  when: install.changed
+
+- name: Set timezone
+  lineinfile:
+    dest: /etc/timezone
+    line: '{{ timezone }}'
+  tags: install
+  when: install.changed
+
+- name: Stop ntpd service
+  service:
+    name: ntp
+    state: stopped
+  tags: ntpdate-run
+  ignore_errors: true
+  when: install.changed
+
+- name: Execute ntpdate runs
+  command: 'ntpdate -s {{ ntpdate_server|default("0.pool.ntp.org") }}'
+  notify: [ start ntpd ]
+  with_sequence: count="3"
+  tags: ntpdate-run
+  when: install.changed

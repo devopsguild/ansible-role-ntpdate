@@ -1,0 +1,7 @@
+---
+
+- name: Stop ntpd service
+  service:
+    name: ntp
+    state: started
+  ignore_errors: true
